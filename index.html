@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Baseball Fund — Order Calculator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green: #1a6b3a;
+    --green-light: #e8f5ee;
+    --green-mid: #2e8b57;
+    --amber: #d4890a;
+    --amber-light: #fef3dc;
+    --red: #c0392b;
+    --red-light: #fdecea;
+    --bg: #f6f4f0;
+    --surface: #ffffff;
+    --border: #e0dcd5;
+    --text: #1c1a17;
+    --muted: #6b6560;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    font-family: 'Georgia', serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 120px;
+  }
+
+  header {
+    background: var(--green);
+    color: white;
+    text-align: center;
+    padding: 20px 16px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+
+  header h1 {
+    font-size: 22px;
+    letter-spacing: 0.04em;
+    font-weight: normal;
+  }
+
+  header p {
+    font-size: 13px;
+    opacity: 0.75;
+    margin-top: 2px;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.08em;
+  }
+
+  .section-label {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 20px 16px 8px;
+  }
+
+  .items-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 0 12px;
+  }
+
+  .item-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .item-card.combo {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .item-card.deal {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--amber-light);
+    border-color: #f0c060;
+  }
+
+  .item-name {
+    font-size: 15px;
+    font-weight: bold;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .combo .item-name, .deal .item-name {
+    flex: 1;
+  }
+
+  .item-desc {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
+    margin-top: 2px;
+  }
+
+  .item-price {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: var(--green);
+    font-weight: bold;
+  }
+
+  .qty-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .qty-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    transition: background 0.15s, border-color 0.15s;
+    font-family: monospace;
+  }
+
+  .qty-btn:active { background: #e0dcd5; }
+  .qty-btn.plus { background: var(--green); border-color: var(--green); color: white; }
+  .qty-btn.plus:active { background: var(--green-mid); }
+
+  .qty-val {
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: bold;
+    min-width: 20px;
+    text-align: center;
+    color: var(--text);
+  }
+
+  .qty-val.nonzero { color: var(--green); }
+
+  footer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 12px 16px;
+    z-index: 200;
+  }
+
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .total-label {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .total-amount {
+    font-size: 28px;
+    font-weight: bold;
+    color: var(--green);
+    font-family: 'Courier New', monospace;
+  }
+
+  .footer-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-clear {
+    flex: 1;
+    padding: 11px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn-clear:active { background: var(--bg); }
+
+  .btn-summary {
+    flex: 2;
+    padding: 11px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: var(--green);
+    color: white;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn-summary:active { background: var(--green-mid); }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 300;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius) var(--radius) 0 0;
+    width: 100%;
+    max-width: 480px;
+    padding: 20px 20px 32px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .modal h2 {
+    font-size: 18px;
+    margin-bottom: 16px;
+    font-weight: normal;
+    letter-spacing: 0.03em;
+  }
+
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 15px;
+  }
+
+  .summary-row:last-of-type { border-bottom: none; }
+
+  .summary-total {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0 0;
+    font-size: 20px;
+    font-weight: bold;
+    border-top: 2px solid var(--text);
+    margin-top: 8px;
+    font-family: 'Courier New', monospace;
+  }
+
+  .btn-close {
+    width: 100%;
+    margin-top: 20px;
+    padding: 13px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: transparent;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>&#9917; Baseball Fund</h1>
+  <p>FRI &mdash; SAT &mdash; SUN</p>
+</header>
+
+<div class="section-label">Individual Items</div>
+<div class="items-grid" id="items-grid"></div>
+
+<div class="section-label">Combos</div>
+<div class="items-grid" id="combos-grid"></div>
+
+<div class="section-label">Deals</div>
+<div class="items-grid" id="deals-grid"></div>
+
+<footer>
+  <div class="total-row">
+    <span class="total-label">Total</span>
+    <span class="total-amount" id="total-display">$0.00</span>
+  </div>
+  <div class="footer-actions">
+    <button class="btn-clear" onclick="clearAll()">Clear</button>
+    <button class="btn-summary" onclick="openSummary()">View Order</button>
+  </div>
+</footer>
+
+<div class="modal-overlay" id="modal-overlay" onclick="closeSummary(event)">
+  <div class="modal" id="modal">
+    <h2>Order Summary</h2>
+    <div id="summary-lines"></div>
+    <div class="summary-total">
+      <span>Total</span>
+      <span id="summary-total"></span>
+    </div>
+    <button class="btn-close" onclick="closeSummary()">Close</button>
+  </div>
+</div>
+
+<script>
+const ITEMS = [
+  { id: 'pizza',     name: 'Pizza',      price: 3, type: 'item' },
+  { id: 'chips',     name: 'Chips',      price: 1, type: 'item' },
+  { id: 'drink',     name: 'Drink',      price: 2, type: 'item' },
+  { id: 'gatorade',  name: 'Gatorade',   price: 3, type: 'item' },
+  { id: 'hotdog',    name: 'Hot Dog',    price: 4, type: 'item' },
+  { id: 'nachos',    name: 'Nachos',     price: 4, type: 'item' },
+  { id: 'candy',     name: 'Candy',      price: 3, type: 'item' },
+  { id: 'icecream',  name: 'Ice Cream',  price: 3, type: 'item' },
+  { id: 'fruitcups', name: 'Fruit Cups', price: 5, type: 'item' },
+];
+
+const COMBOS = [
+  { id: 'combo1', name: 'Combo #1', price: 5, type: 'combo', desc: 'Pizza, Chips, Soda or Water' },
+  { id: 'combo2', name: 'Combo #2', price: 5, type: 'combo', desc: 'Nachos w/ Any Drink' },
+  { id: 'combo3', name: 'Combo #3', price: 6, type: 'combo', desc: 'Hot Dog, Chips, Soda or Water' },
+];
+
+const DEALS = [
+  { id: 'deal1', name: '2 Pizza Slices', price: 5, type: 'deal', desc: 'Deal — save $1' },
+];
+
+const ALL = [...ITEMS, ...COMBOS, ...DEALS];
+const qty = {};
+ALL.forEach(i => qty[i.id] = 0);
+
+function renderCard(item) {
+  const isCombo = item.type === 'combo';
+  const isDeal = item.type === 'deal';
+  const cls = isCombo ? 'item-card combo' : isDeal ? 'item-card deal' : 'item-card';
+  const descHtml = item.desc ? `<div class="item-desc">${item.desc}</div>` : '';
+  return `
+    <div class="${cls}" id="card-${item.id}">
+      <div>
+        <div class="item-name">${item.name}</div>
+        ${descHtml}
+        <div class="item-price">$${item.price}</div>
+      </div>
+      <div class="qty-controls">
+        <button class="qty-btn minus" onclick="change('${item.id}', -1)">&#8722;</button>
+        <span class="qty-val" id="qty-${item.id}">0</span>
+        <button class="qty-btn plus" onclick="change('${item.id}', 1)">+</button>
+      </div>
+    </div>`;
+}
+
+document.getElementById('items-grid').innerHTML = ITEMS.map(renderCard).join('');
+document.getElementById('combos-grid').innerHTML = COMBOS.map(renderCard).join('');
+document.getElementById('deals-grid').innerHTML = DEALS.map(renderCard).join('');
+
+function change(id, delta) {
+  qty[id] = Math.max(0, qty[id] + delta);
+  const el = document.getElementById('qty-' + id);
+  el.textContent = qty[id];
+  el.className = qty[id] > 0 ? 'qty-val nonzero' : 'qty-val';
+  updateTotal();
+}
+
+function updateTotal() {
+  const total = ALL.reduce((sum, item) => sum + item.price * qty[item.id], 0);
+  document.getElementById('total-display').textContent = '$' + total.toFixed(2);
+}
+
+function clearAll() {
+  ALL.forEach(item => {
+    qty[item.id] = 0;
+    const el = document.getElementById('qty-' + item.id);
+    if (el) { el.textContent = '0'; el.className = 'qty-val'; }
+  });
+  updateTotal();
+}
+
+function openSummary() {
+  const lines = ALL.filter(item => qty[item.id] > 0);
+  if (!lines.length) { alert('No items selected yet!'); return; }
+  const total = lines.reduce((s, i) => s + i.price * qty[i.id], 0);
+  document.getElementById('summary-lines').innerHTML = lines.map(item =>
+    `<div class="summary-row">
+      <span>${item.name} x${qty[item.id]}</span>
+      <span>$${(item.price * qty[item.id]).toFixed(2)}</span>
+    </div>`
+  ).join('');
+  document.getElementById('summary-total').textContent = '$' + total.toFixed(2);
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeSummary(e) {
+  if (!e || e.target === document.getElementById('modal-overlay')) {
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+}
+</script>
+</body>
+</html>
