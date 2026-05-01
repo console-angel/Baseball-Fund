@@ -9,6 +9,7 @@
 
   html {
     touch-action: manipulation;
+    overscroll-behavior-y: none;
   }
 
   :root {
@@ -34,7 +35,9 @@
     color: var(--text);
     font-size: 17px;
     min-height: 100vh;
-    padding: 0 0 148px;
+    padding: 0 0 220px;
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
     touch-action: pan-y;
   }
 
@@ -553,11 +556,17 @@ function updateSavedOrdersStatus() {
   }
 }
 
+function syncFooterSpacing() {
+  const footer = document.querySelector('footer');
+  if (!footer) return;
+  const spacing = footer.offsetHeight + 24;
+  document.body.style.paddingBottom = spacing + 'px';
+  document.documentElement.style.scrollPaddingBottom = spacing + 'px';
+}
+
 function clearSavedOrders() {
-  if (!confirm('Clear all saved orders? This cannot be undone.')) return;
   localStorage.removeItem(ORDERS_STORAGE_KEY);
   updateSavedOrdersStatus();
-  alert('Saved orders cleared.');
 }
 
 function escapeCSV(value) {
@@ -611,6 +620,9 @@ document.addEventListener('dblclick', event => event.preventDefault(), { passive
 });
 
 updateSavedOrdersStatus();
+syncFooterSpacing();
+window.addEventListener('resize', syncFooterSpacing);
+window.addEventListener('orientationchange', syncFooterSpacing);
 
 function change(id, delta) {
   qty[id] = Math.max(0, qty[id] + delta);
@@ -646,7 +658,6 @@ function saveOrder() {
   const orders = getSavedOrders();
   orders.push(order);
   setSavedOrders(orders);
-  alert(`Order saved. Total saved orders: ${orders.length}`);
 }
 
 function saveOrderFromModal() {
@@ -662,15 +673,11 @@ function saveOrderFromModal() {
   // mimic Clear behaviour and dismiss modal
   clearAll();
   closeSummary();
-  alert(`Order saved and cleared. Total saved orders: ${orders.length}`);
 }
 
 function exportCSV() {
   const orders = getSavedOrders();
-  if (!orders.length) {
-    alert('No saved orders to export yet.');
-    return;
-  }
+  if (!orders.length) return;
 
   // header: order_id, saved_at, [each item/combo name], order_total
   const itemNames = ALL.map(i => i.name);
@@ -705,13 +712,17 @@ function formatSavedOrderLines(order) {
 
 function openSavedOrders() {
   const orders = getSavedOrders();
+  const linesEl = document.getElementById('saved-orders-lines');
+  const totalEl = document.getElementById('saved-orders-total');
   if (!orders.length) {
-    alert('No saved orders yet.');
+    linesEl.innerHTML = '';
+    totalEl.textContent = '';
+    document.getElementById('saved-orders-overlay').classList.add('open');
     return;
   }
 
   const total = orders.reduce((sum, order) => sum + (order.total || 0), 0);
-  document.getElementById('saved-orders-lines').innerHTML = orders.map((order, index) => `
+  linesEl.innerHTML = orders.map((order, index) => `
     <div class="saved-order-block">
       <div class="saved-order-meta">
         <span>Order ${index + 1}</span>
@@ -726,7 +737,7 @@ function openSavedOrders() {
       </div>
     </div>
   `).join('');
-  document.getElementById('saved-orders-total').textContent = '$' + total.toFixed(2);
+  totalEl.textContent = '$' + total.toFixed(2);
   document.getElementById('saved-orders-overlay').classList.add('open');
 }
 
@@ -738,15 +749,23 @@ function closeSavedOrders(e) {
 
 function openSummary() {
   const lines = ALL.filter(item => qty[item.id] > 0);
-  if (!lines.length) { alert('No items selected yet!'); return; }
+  const linesEl = document.getElementById('summary-lines');
+  const totalEl = document.getElementById('summary-total');
+  if (!lines.length) {
+    linesEl.innerHTML = '';
+    totalEl.textContent = '';
+    document.getElementById('modal-overlay').classList.add('open');
+    return;
+  }
+
   const total = lines.reduce((s, i) => s + i.price * qty[i.id], 0);
-  document.getElementById('summary-lines').innerHTML = lines.map(item =>
+  linesEl.innerHTML = lines.map(item =>
     `<div class="summary-row">
       <span>${item.name} x${qty[item.id]}</span>
       <span>$${(item.price * qty[item.id]).toFixed(2)}</span>
     </div>`
   ).join('');
-  document.getElementById('summary-total').textContent = '$' + total.toFixed(2);
+  totalEl.textContent = '$' + total.toFixed(2);
   document.getElementById('modal-overlay').classList.add('open');
 }
 
