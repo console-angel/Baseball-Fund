@@ -2,10 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Baseball Fund — Order Calculator</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html {
+    touch-action: manipulation;
+  }
 
   :root {
     --green: #1a6b3a;
@@ -28,15 +32,22 @@
     font-family: 'Georgia', serif;
     background: var(--bg);
     color: var(--text);
+    font-size: 17px;
     min-height: 100vh;
-    padding: 0 0 120px;
+    padding: 0 0 148px;
+    touch-action: pan-y;
+  }
+
+  button {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 
   header {
     background: var(--green);
     color: white;
     text-align: center;
-    padding: 20px 16px 16px;
+    padding: 22px 16px 18px;
     position: sticky;
     top: 0;
     z-index: 100;
@@ -44,32 +55,32 @@
   }
 
   header h1 {
-    font-size: 22px;
+    font-size: 28px;
     letter-spacing: 0.04em;
     font-weight: normal;
   }
 
   header p {
-    font-size: 13px;
+    font-size: 16px;
     opacity: 0.75;
-    margin-top: 2px;
+    margin-top: 4px;
     font-family: 'Courier New', monospace;
     letter-spacing: 0.08em;
   }
 
   .section-label {
     font-family: 'Courier New', monospace;
-    font-size: 11px;
+    font-size: 14px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--muted);
-    padding: 20px 16px 8px;
+    padding: 22px 16px 10px;
   }
 
   .items-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 12px;
     padding: 0 12px;
   }
 
@@ -77,10 +88,10 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 12px;
+    padding: 14px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
   }
 
   .item-card.combo {
@@ -100,7 +111,7 @@
   }
 
   .item-name {
-    font-size: 15px;
+    font-size: 19px;
     font-weight: bold;
     color: var(--text);
     line-height: 1.2;
@@ -112,7 +123,7 @@
 
   .item-desc {
     font-family: 'Courier New', monospace;
-    font-size: 11px;
+    font-size: 14px;
     color: var(--muted);
     line-height: 1.4;
     margin-top: 2px;
@@ -120,32 +131,35 @@
 
   .item-price {
     font-family: 'Courier New', monospace;
-    font-size: 14px;
+    font-size: 18px;
     color: var(--green);
     font-weight: bold;
+    margin-top: 2px;
   }
 
   .qty-controls {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
   }
 
   .qty-btn {
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     border: 1.5px solid var(--border);
     background: var(--bg);
-    font-size: 18px;
+    font-size: 22px;
     line-height: 1;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--text);
-    transition: background 0.15s, border-color 0.15s;
+    transition: background 0.1s, border-color 0.1s;
     font-family: monospace;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .qty-btn:active { background: #e0dcd5; }
@@ -154,9 +168,9 @@
 
   .qty-val {
     font-family: 'Courier New', monospace;
-    font-size: 16px;
+    font-size: 21px;
     font-weight: bold;
-    min-width: 20px;
+    min-width: 24px;
     text-align: center;
     color: var(--text);
   }
@@ -168,7 +182,7 @@
     bottom: 0; left: 0; right: 0;
     background: var(--surface);
     border-top: 1px solid var(--border);
-    padding: 12px 16px;
+    padding: 14px 16px max(16px, env(safe-area-inset-bottom));
     z-index: 200;
   }
 
@@ -176,19 +190,19 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
 
   .total-label {
     font-family: 'Courier New', monospace;
-    font-size: 12px;
+    font-size: 15px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--muted);
   }
 
   .total-amount {
-    font-size: 28px;
+    font-size: 36px;
     font-weight: bold;
     color: var(--green);
     font-family: 'Courier New', monospace;
@@ -201,32 +215,36 @@
 
   .btn-clear {
     flex: 1;
-    padding: 11px;
+    padding: 14px;
     border-radius: var(--radius-sm);
     border: 1.5px solid var(--border);
     background: transparent;
     color: var(--muted);
     font-family: 'Courier New', monospace;
-    font-size: 13px;
+    font-size: 16px;
     letter-spacing: 0.05em;
     cursor: pointer;
-    transition: background 0.15s;
+    transition: background 0.1s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .btn-clear:active { background: var(--bg); }
 
   .btn-summary {
     flex: 2;
-    padding: 11px;
+    padding: 14px;
     border-radius: var(--radius-sm);
     border: none;
     background: var(--green);
     color: white;
     font-family: 'Courier New', monospace;
-    font-size: 13px;
+    font-size: 16px;
     letter-spacing: 0.05em;
     cursor: pointer;
-    transition: background 0.15s;
+    transition: background 0.1s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .btn-summary:active { background: var(--green-mid); }
@@ -239,6 +257,7 @@
     z-index: 300;
     align-items: flex-end;
     justify-content: center;
+    touch-action: none;
   }
 
   .modal-overlay.open { display: flex; }
@@ -248,14 +267,15 @@
     border-radius: var(--radius) var(--radius) 0 0;
     width: 100%;
     max-width: 480px;
-    padding: 20px 20px 32px;
+    padding: 24px 20px max(32px, env(safe-area-inset-bottom));
     max-height: 80vh;
     overflow-y: auto;
+    touch-action: pan-y;
   }
 
   .modal h2 {
-    font-size: 18px;
-    margin-bottom: 16px;
+    font-size: 24px;
+    margin-bottom: 18px;
     font-weight: normal;
     letter-spacing: 0.03em;
   }
@@ -263,9 +283,9 @@
   .summary-row {
     display: flex;
     justify-content: space-between;
-    padding: 8px 0;
+    padding: 11px 0;
     border-bottom: 1px solid var(--border);
-    font-size: 15px;
+    font-size: 18px;
   }
 
   .summary-row:last-of-type { border-bottom: none; }
@@ -273,8 +293,8 @@
   .summary-total {
     display: flex;
     justify-content: space-between;
-    padding: 12px 0 0;
-    font-size: 20px;
+    padding: 14px 0 0;
+    font-size: 26px;
     font-weight: bold;
     border-top: 2px solid var(--text);
     margin-top: 8px;
@@ -284,15 +304,17 @@
   .btn-close {
     width: 100%;
     margin-top: 20px;
-    padding: 13px;
+    padding: 16px;
     border-radius: var(--radius-sm);
     border: 1.5px solid var(--border);
     background: transparent;
-    font-size: 14px;
+    font-size: 17px;
     cursor: pointer;
     font-family: 'Courier New', monospace;
     letter-spacing: 0.05em;
     color: var(--muted);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 </style>
 </head>
@@ -385,6 +407,12 @@ function renderCard(item) {
 document.getElementById('items-grid').innerHTML = ITEMS.map(renderCard).join('');
 document.getElementById('combos-grid').innerHTML = COMBOS.map(renderCard).join('');
 document.getElementById('deals-grid').innerHTML = DEALS.map(renderCard).join('');
+
+document.documentElement.style.webkitTextSizeAdjust = '100%';
+document.addEventListener('dblclick', event => event.preventDefault(), { passive: false });
+['gesturestart', 'gesturechange', 'gestureend'].forEach(type => {
+  document.addEventListener(type, event => event.preventDefault(), { passive: false });
+});
 
 function change(id, delta) {
   qty[id] = Math.max(0, qty[id] + delta);
