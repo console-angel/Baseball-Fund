@@ -417,6 +417,138 @@
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
+
+  .payment-section {
+    display: none;
+    margin-top: 20px;
+  }
+
+  .payment-section.active {
+    display: block;
+  }
+
+  .payment-display {
+    background: var(--green-light);
+    border: 1px solid #2e8b57;
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .payment-label {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+
+  .payment-amount {
+    font-size: 32px;
+    font-weight: bold;
+    color: var(--green);
+    font-family: 'Courier New', monospace;
+    word-break: break-all;
+  }
+
+  .keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .keypad-btn {
+    padding: 16px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    transition: background 0.1s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .keypad-btn:active {
+    background: var(--bg);
+  }
+
+  .keypad-btn.delete {
+    grid-column: 1 / 3;
+    background: var(--red-light);
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  .keypad-btn.delete:active {
+    background: #f0b3ad;
+  }
+
+  .keypad-btn.decimal {
+    grid-column: 3;
+    font-size: 24px;
+  }
+
+  .change-display {
+    background: var(--amber-light);
+    border: 1px solid #f0c060;
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .change-label {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+
+  .change-amount {
+    font-size: 28px;
+    font-weight: bold;
+    color: var(--green);
+    font-family: 'Courier New', monospace;
+  }
+
+  .btn-payment {
+    width: 100%;
+    padding: 14px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: var(--green);
+    color: white;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: background 0.1s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    font-weight: bold;
+  }
+
+  .btn-payment:active {
+    background: var(--green-mid);
+  }
+
+  .btn-payment:disabled {
+    background: var(--muted);
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .change-display.hidden {
+    display: none;
+  }
 </style>
 </head>
 <body>
@@ -465,9 +597,20 @@
       <span>Total</span>
       <span id="summary-total"></span>
     </div>
-    <div class="modal-actions">
-      <button class="btn-modal" onclick="saveOrderFromModal()">Save Order</button>
-      <button id="modal-export" class="btn-modal" onclick="exportCSV()">Export CSV</button>
+    <div id="payment-section" class="payment-section">
+      <div class="payment-display">
+        <div class="payment-label">Cash Amount</div>
+        <div class="payment-amount" id="cash-display">$0.00</div>
+      </div>
+      <div class="keypad" id="keypad"></div>
+      <div class="change-display hidden" id="change-display">
+        <div class="change-label">Change</div>
+        <div class="change-amount" id="change-amount">$0.00</div>
+      </div>
+    </div>
+    <div class="modal-actions" id="modal-actions">
+      <button class="btn-modal" onclick="payWithCard()">💳 Card</button>
+      <button class="btn-modal" onclick="initCashPayment()">💵 Cash</button>
       <button class="btn-modal" onclick="closeSummary()">Close</button>
     </div>
   </div>
@@ -514,6 +657,32 @@ const ALL = [...ITEMS, ...COMBOS, ...DEALS];
 const qty = {};
 ALL.forEach(i => qty[i.id] = 0);
 const ORDERS_STORAGE_KEY = 'baseball-fund-orders';
+let paymentState = {
+  mode: null, // 'card' or 'cash'
+  cashAmount: '',
+};
+
+function initializeKeypad() {
+  const keypad = document.getElementById('keypad');
+  const buttons = [
+    { num: '1', click: () => addCashDigit('1') },
+    { num: '2', click: () => addCashDigit('2') },
+    { num: '3', click: () => addCashDigit('3') },
+    { num: '4', click: () => addCashDigit('4') },
+    { num: '5', click: () => addCashDigit('5') },
+    { num: '6', click: () => addCashDigit('6') },
+    { num: '7', click: () => addCashDigit('7') },
+    { num: '8', click: () => addCashDigit('8') },
+    { num: '9', click: () => addCashDigit('9') },
+    { num: '.', click: () => addCashDigit('.'), class: 'decimal' },
+    { num: '0', click: () => addCashDigit('0') },
+    { num: 'DEL', click: deleteCashDigit, class: 'delete' },
+  ];
+  
+  keypad.innerHTML = buttons.map(btn => 
+    `<button class="keypad-btn ${btn.class || ''}" onclick="${btn.num === 'DEL' ? 'deleteCashDigit()' : `addCashDigit('${btn.num}')`}">${btn.num}</button>`
+  ).join('');
+}
 
 function getSavedOrders() {
   try {
@@ -621,6 +790,7 @@ document.addEventListener('dblclick', event => event.preventDefault(), { passive
 
 updateSavedOrdersStatus();
 syncFooterSpacing();
+initializeKeypad();
 window.addEventListener('resize', syncFooterSpacing);
 window.addEventListener('orientationchange', syncFooterSpacing);
 
@@ -748,6 +918,7 @@ function closeSavedOrders(e) {
 }
 
 function openSummary() {
+  resetPaymentState();
   const lines = ALL.filter(item => qty[item.id] > 0);
   const linesEl = document.getElementById('summary-lines');
   const totalEl = document.getElementById('summary-total');
@@ -772,7 +943,113 @@ function openSummary() {
 function closeSummary(e) {
   if (!e || e.target === document.getElementById('modal-overlay')) {
     document.getElementById('modal-overlay').classList.remove('open');
+    resetPaymentState();
   }
+}
+
+function addCashDigit(digit) {
+  if (digit === '.') {
+    if (paymentState.cashAmount.includes('.')) return;
+    if (!paymentState.cashAmount) paymentState.cashAmount = '0';
+  }
+  paymentState.cashAmount += digit;
+  updateCashDisplay();
+  updateSaveButtonState();
+}
+
+function deleteCashDigit() {
+  paymentState.cashAmount = paymentState.cashAmount.slice(0, -1);
+  updateCashDisplay();
+  updateSaveButtonState();
+}
+
+function updateCashDisplay() {
+  const display = document.getElementById('cash-display');
+  const total = getCurrentOrderTotal();
+  const cashAmount = parseFloat(paymentState.cashAmount) || 0;
+  
+  if (paymentState.cashAmount) {
+    display.textContent = '$' + cashAmount.toFixed(2);
+  } else {
+    display.textContent = '$0.00';
+  }
+
+  const changeDisplay = document.getElementById('change-display');
+  const changeAmount = document.getElementById('change-amount');
+  
+  if (cashAmount >= total && paymentState.cashAmount) {
+    const change = cashAmount - total;
+    changeAmount.textContent = '$' + change.toFixed(2);
+    changeDisplay.classList.remove('hidden');
+  } else {
+    changeDisplay.classList.add('hidden');
+  }
+}
+
+function getCurrentOrderTotal() {
+  return ALL.reduce((sum, item) => sum + item.price * qty[item.id], 0);
+}
+
+function initCashPayment() {
+  paymentState.mode = 'cash';
+  paymentState.cashAmount = '';
+  document.getElementById('payment-section').classList.add('active');
+  document.getElementById('modal-actions').innerHTML = `
+    <button class="btn-payment" id="save-cash-btn" onclick="saveOrderFromCash()" disabled>Save Order</button>
+    <button class="btn-modal" onclick="cancelCashPayment()">Cancel</button>
+  `;
+  updateCashDisplay();
+  updateSaveButtonState();
+}
+
+function updateSaveButtonState() {
+  const btn = document.getElementById('save-cash-btn');
+  if (btn) {
+    const total = getCurrentOrderTotal();
+    const cashAmount = parseFloat(paymentState.cashAmount) || 0;
+    btn.disabled = cashAmount < total || !paymentState.cashAmount;
+  }
+}
+
+function cancelCashPayment() {
+  resetPaymentState();
+  document.getElementById('payment-section').classList.remove('active');
+  document.getElementById('modal-actions').innerHTML = `
+    <button class="btn-modal" onclick="payWithCard()">💳 Card</button>
+    <button class="btn-modal" onclick="initCashPayment()">💵 Cash</button>
+    <button class="btn-modal" onclick="closeSummary()">Close</button>
+  `;
+}
+
+function payWithCard() {
+  saveOrderFromModal();
+}
+
+function saveOrderFromCash() {
+  const hasItems = ALL.some(item => qty[item.id] > 0);
+  if (!hasItems) {
+    alert('Add items before saving the order.');
+    return;
+  }
+  const order = buildOrderSnapshot();
+  const orders = getSavedOrders();
+  orders.push(order);
+  setSavedOrders(orders);
+  clearAll();
+  closeSummary();
+}
+
+function resetPaymentState() {
+  paymentState = {
+    mode: null,
+    cashAmount: '',
+  };
+  document.getElementById('payment-section').classList.remove('active');
+  document.getElementById('modal-actions').innerHTML = `
+    <button class="btn-modal" onclick="payWithCard()">💳 Card</button>
+    <button class="btn-modal" onclick="initCashPayment()">💵 Cash</button>
+    <button class="btn-modal" onclick="closeSummary()">Close</button>
+  `;
 }
 </script>
 </body>
